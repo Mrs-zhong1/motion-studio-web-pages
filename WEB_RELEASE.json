@@ -8,7 +8,8 @@
   "artifact": "index.html",
   "bytes": 2260068,
   "sha256": "a98ba92f7b53b095205ac83e0de22ecf9390ee6f476262c7a70421ceac27a62f",
-  "deploymentSmoke": "PENDING",
+  "deploymentSmoke": "PASS",
+  "deploymentSmokeAt": "2026-11-13T12:07:36Z",
   "nativeSafari": "NOT TESTED",
   "realDevicePerformance": "NOT TESTED"
 }
