@@ -1,15 +1,14 @@
 {
   "app": "Motion Studio Web",
-  "sourceCommit": "27b70b684177c7d9a88d2f802b40ac4928b0f8e0",
-  "browserGateRun": 43367345627,
+  "sourceCommit": "51fe8af2025c763bff43eddc288717ade2a3c65e",
+  "browserGateRun": 43418806613,
   "browserGate": "Chromium, Firefox and WebKit product journeys passed",
-  "threeGateRun": 43367345614,
+  "threeGateRun": 43418806679,
   "threeGate": "Stage 9-15 software WebGL, PBR, GLB and Meshopt gates passed",
   "artifact": "index.html",
-  "bytes": 2258637,
-  "sha256": "8b0237f8af8464e25739d81375be18fc8be2cbc51ddcb5649c18932ef0c65b6f",
-  "deploymentSmoke": "PASS",
-  "deploymentSmokeAt": "2026-11-13T04:51:26Z",
+  "bytes": 2260068,
+  "sha256": "a98ba92f7b53b095205ac83e0de22ecf9390ee6f476262c7a70421ceac27a62f",
+  "deploymentSmoke": "PENDING",
   "nativeSafari": "NOT TESTED",
   "realDevicePerformance": "NOT TESTED"
 }
