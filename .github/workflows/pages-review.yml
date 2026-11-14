@@ -28,9 +28,53 @@ jobs:
           cp index.html review-preview.html public/
           test -s public/index.html
           test -s public/review-preview.html
+      - name: Validate actual preview HTML before publishing
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+          import re
+          index=Path("public/index.html").read_text(encoding="utf-8")
+          app=Path("public/review-preview.html").read_text(encoding="utf-8")
+          assert "review-preview.html" in index
+          assert all(fragment in app for fragment in ('id="discoveryView"','id="templateGrid"','id="editorView"','id="templatePreview"'))
+          assert len(re.findall(r"'(?:editorial|cinematic|fashion|gallery|architecture|saas|agency|product-3d)'",app)) >= 8
+          print("Local publish package PASS:",len(app),"bytes")
+          PY
       - uses: actions/configure-pages@v5
       - uses: actions/upload-pages-artifact@v4
         with:
           path: public
       - id: deployment
         uses: actions/deploy-pages@v4
+
+      - name: Confirm deployed URL returns real Motion Studio markup
+        env:
+          DEPLOYED_URL: ${{ steps.deployment.outputs.page_url }}
+        run: |
+          python - <<'PY'
+          import os, time, urllib.request, urllib.parse
+          base=os.environ.get("DEPLOYED_URL","").rstrip("/")
+          assert base.startswith("https://"), f"Pages URL unavailable: {base!r}"
+          app_url=urllib.parse.urljoin(base+"/","review-preview.html")
+          error=None
+          for attempt in range(15):
+              try:
+                  with urllib.request.urlopen(app_url,timeout=15) as response:
+                      document=response.read().decode("utf-8")
+                      status=response.status
+                  assert status == 200, status
+                  assert 'id="discoveryView"' in document
+                  assert 'id="templateGrid"' in document
+                  print("DEPLOYED_REVIEW_URL="+app_url)
+                  print("LIVE_SMOKE_PASS: status 200, template-first markup present")
+                  with open(os.environ["GITHUB_STEP_SUMMARY"],"a") as summary:
+                      summary.write("### Live preview verification\\n")
+                      summary.write(f"[Open deployed Motion Studio review]({app_url})\\n")
+                      summary.write("HTTP 200; template gallery markup verified. This is a review build, not production acceptance.\\n")
+                  break
+              except Exception as exc:
+                  error=repr(exc)
+                  if attempt < 14: time.sleep(8)
+          else:
+              raise RuntimeError(f"Live smoke failed: {app_url}, last error: {error}")
+          PY
