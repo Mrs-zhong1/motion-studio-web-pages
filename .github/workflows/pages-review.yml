@@ -1,0 +1,36 @@
+name: Deploy Motion Studio Review Site
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'index.html'
+      - 'review-preview.html'
+      - '.github/workflows/pages-review.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+concurrency:
+  group: pages-review
+  cancel-in-progress: true
+jobs:
+  deploy-review:
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - uses: actions/checkout@v4
+      - name: Package only reviewed browser preview files
+        run: |
+          mkdir -p public
+          cp index.html review-preview.html public/
+          test -s public/index.html
+          test -s public/review-preview.html
+      - uses: actions/configure-pages@v5
+      - uses: actions/upload-pages-artifact@v4
+        with:
+          path: public
+      - id: deployment
+        uses: actions/deploy-pages@v4
