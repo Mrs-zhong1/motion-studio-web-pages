@@ -1,11 +1,55 @@
 {
   "product": "Motion Studio Web",
   "channel": "public-review-not-production",
-  "source_commit": "121d4c92f6b0e5e80932d2564a0a42880c24f13b",
-  "verified_source_ci": "https://github.com/Mrs-zhong1/motion-studio-web/actions/runs/43723043673",
+  "photo_bundle": {
+    "editorial": {
+      "bundledPhotos": 4,
+      "fallbackChapters": 0,
+      "total": 4
+    },
+    "product-3d": {
+      "bundledPhotos": 5,
+      "fallbackChapters": 0,
+      "total": 5
+    },
+    "cinematic": {
+      "bundledPhotos": 5,
+      "fallbackChapters": 0,
+      "total": 5
+    },
+    "architecture": {
+      "bundledPhotos": 5,
+      "fallbackChapters": 0,
+      "total": 5
+    },
+    "agency": {
+      "bundledPhotos": 5,
+      "fallbackChapters": 0,
+      "total": 5
+    },
+    "fashion": {
+      "bundledPhotos": 5,
+      "fallbackChapters": 0,
+      "total": 5
+    },
+    "gallery": {
+      "bundledPhotos": 5,
+      "fallbackChapters": 0,
+      "total": 5
+    },
+    "saas": {
+      "bundledPhotos": 5,
+      "fallbackChapters": 0,
+      "total": 5
+    }
+  },
+  "photo_coverage": "39/39",
+  "photo_fallbacks": 0,
+  "source_commit": "660f1d631bda8f36f143f8b4f035d5f60a53da10",
+  "verified_source_ci": "https://github.com/Mrs-zhong1/motion-studio-web/actions/runs/43726467810",
   "filename": "review-preview.html",
-  "bytes": 2369343,
-  "sha256": "d4664c3545ce6151cabcd37c604b2f22d0bdac73789032dc7d53e79e3ec33830",
+  "bytes": 7044260,
+  "sha256": "dfd5312db515585e6763e30aa63a2339e5d998cc338f27e1a84fc6c795ddfeb2",
   "native_safari": "NOT TESTED",
   "real_phone_gpu": "NOT TESTED",
   "commercial_media_license": "NOT APPROVED"
