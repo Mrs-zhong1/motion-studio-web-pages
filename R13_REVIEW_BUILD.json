@@ -1,0 +1,12 @@
+{
+  "product": "Motion Studio Web",
+  "channel": "public-review-not-production",
+  "source_commit": "080d66ab38f337b75c93cc940d04d261064d1ba3",
+  "verified_source_ci": "https://github.com/Mrs-zhong1/motion-studio-web/actions/runs/43713990266",
+  "filename": "review-preview.html",
+  "bytes": 2350970,
+  "sha256": "7800a31611633de9cc2587397d6537d7481da331460ac53820910025fd1d10a7",
+  "native_safari": "NOT TESTED",
+  "real_phone_gpu": "NOT TESTED",
+  "commercial_media_license": "NOT APPROVED"
+}
