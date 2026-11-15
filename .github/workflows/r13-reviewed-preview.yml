@@ -1,0 +1,125 @@
+name: R13 Build and Deploy Reviewed Motion Studio Preview
+on:
+  push:
+    branches: [main]
+    paths:
+      - '.github/workflows/r13-reviewed-preview.yml'
+  workflow_dispatch:
+permissions:
+  contents: write
+  pages: write
+  id-token: write
+concurrency:
+  group: r13-preview
+  cancel-in-progress: false
+jobs:
+  review-build-and-deploy:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    env:
+      REVIEW_SOURCE_SHA: 080d66ab38f337b75c93cc940d04d261064d1ba3
+      REVIEW_SOURCE_CI: https://github.com/Mrs-zhong1/motion-studio-web/actions/runs/43713990266
+    steps:
+      - name: Checkout public review host
+        uses: actions/checkout@v4
+        with:
+          path: pages
+      - name: Checkout exact tested source commit (never floating branch)
+        uses: actions/checkout@v4
+        with:
+          repository: Mrs-zhong1/motion-studio-web
+          ref: ${{ env.REVIEW_SOURCE_SHA }}
+          path: source
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+          cache-dependency-path: source/stage9/package-lock.json
+      - name: Build full offline Three.js editor
+        working-directory: source/stage9
+        run: |
+          set -euo pipefail
+          npm ci --no-audit --no-fund
+          npm run build
+          python tests/check_build.py
+      - name: Copy actual preview, record reviewed source SHA
+        run: |
+          set -euo pipefail
+          cp source/stage9/Motion-Studio-Stage15-Meshopt-OFFLINE.html pages/review-preview.html
+          python - <<'PY'
+          from pathlib import Path
+          import hashlib,json,os
+          p=Path('pages/review-preview.html')
+          b=p.read_bytes()
+          text=b.decode('utf-8')
+          assert len(b)>2_000_000 and 'id="discoveryView"' in text
+          for marker in ('const stage9ThreeEngineURL=','const stage9SharedEngineURL=',
+                         'motion-atmosphere','installR13StoryMotion',
+                         'id="previewImmersive"'):
+              assert marker in text,marker
+          metadata={'product':'Motion Studio Web','channel':'public-review-not-production',
+                    'source_commit':os.environ['REVIEW_SOURCE_SHA'],
+                    'verified_source_ci':os.environ['REVIEW_SOURCE_CI'],
+                    'filename':'review-preview.html','bytes':len(b),
+                    'sha256':hashlib.sha256(b).hexdigest(),
+                    'native_safari':'NOT TESTED','real_phone_gpu':'NOT TESTED',
+                    'commercial_media_license':'NOT APPROVED'}
+          Path('pages/R13_REVIEW_BUILD.json').write_text(json.dumps(metadata,indent=2)+'\n')
+          print('VERIFIED_R13_BUILD',metadata)
+          PY
+      - name: Publish generated review HTML into review branch (not product main)
+        working-directory: pages
+        run: |
+          set -euo pipefail
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add review-preview.html R13_REVIEW_BUILD.json
+          if ! git diff --cached --quiet; then
+            git commit -m 'build(review): deploy tested R13 full Three.js HTML'
+            git push origin HEAD:main
+          fi
+      - name: Prepare GitHub Pages review package
+        run: |
+          mkdir public
+          cp pages/index.html pages/review-preview.html pages/R13_REVIEW_BUILD.json public/
+      - uses: actions/configure-pages@v5
+      - uses: actions/upload-pages-artifact@v4
+        with:
+          path: public
+      - id: deployment
+        uses: actions/deploy-pages@v4
+      - name: Verify live R13 HTML and exact SHA256 (not merely HTTP 200)
+        env:
+          PAGE_URL: ${{ steps.deployment.outputs.page_url }}
+        run: |
+          python - <<'PY'
+          import hashlib,os,time,urllib.request
+          from pathlib import Path
+          base=os.environ['PAGE_URL'].rstrip('/')
+          url=base+'/review-preview.html'
+          expected=hashlib.sha256(Path('pages/review-preview.html').read_bytes()).hexdigest()
+          error=None
+          for attempt in range(15):
+              try:
+                  with urllib.request.urlopen(urllib.request.Request(url,headers={'Cache-Control':'no-cache'}),timeout=30) as r:
+                      data=r.read()
+                      assert r.status==200
+                  assert hashlib.sha256(data).hexdigest()==expected, 'deployed content hash mismatch'
+                  for token in (b'motion-atmosphere',b'installR13StoryMotion',b'id="previewImmersive"'):
+                      assert token in data,token
+                  with open(os.environ['GITHUB_STEP_SUMMARY'],'a') as f:
+                      f.write('### R13 live review: exact bundle hash verified\n')
+                      f.write(f'{url}\n\nSHA256: \`{expected}\`\n')
+                      f.write('Review build only, not production signoff.\n')
+                  print('LIVE_R13_PASS',url,len(data),expected)
+                  break
+              except Exception as exc:
+                  error=str(exc)
+                  if attempt<14:time.sleep(8)
+          else:
+              raise RuntimeError('R13 live smoke failed: '+str(error))
+          PY
