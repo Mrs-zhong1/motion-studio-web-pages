@@ -20,8 +20,8 @@ jobs:
       name: github-pages
       url: ${{ steps.deployment.outputs.page_url }}
     env:
-      REVIEW_SOURCE_SHA: 080d66ab38f337b75c93cc940d04d261064d1ba3
-      REVIEW_SOURCE_CI: https://github.com/Mrs-zhong1/motion-studio-web/actions/runs/43713990266
+      REVIEW_SOURCE_SHA: 30866dcb62b680499498d83c13e0a4856a67e462
+      REVIEW_SOURCE_CI: https://github.com/Mrs-zhong1/motion-studio-web/actions/runs/43715835034
     steps:
       - name: Checkout public review host
         uses: actions/checkout@v4
