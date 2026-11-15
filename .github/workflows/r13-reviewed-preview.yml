@@ -20,8 +20,8 @@ jobs:
       name: github-pages
       url: ${{ steps.deployment.outputs.page_url }}
     env:
-      REVIEW_SOURCE_SHA: 121d4c92f6b0e5e80932d2564a0a42880c24f13b
-      REVIEW_SOURCE_CI: https://github.com/Mrs-zhong1/motion-studio-web/actions/runs/43723043673
+      REVIEW_SOURCE_SHA: 660f1d631bda8f36f143f8b4f035d5f60a53da10
+      REVIEW_SOURCE_CI: https://github.com/Mrs-zhong1/motion-studio-web/actions/runs/43726467810
     steps:
       - name: Checkout public review host
         uses: actions/checkout@v4
@@ -44,6 +44,16 @@ jobs:
           npm install --no-audit --no-fund
           npm run build
           python tests/check_build.py
+          python - <<'PY'
+          import json
+          manifest=json.load(open('BUILD_MANIFEST.json'))
+          audit=manifest.get('photoBundle',{})
+          assert len(audit)==8,audit
+          loaded=sum(x['bundledPhotos'] for x in audit.values())
+          missing=sum(x['fallbackChapters'] for x in audit.values())
+          assert loaded==39 and missing==0,(loaded,missing,audit)
+          print('R15-04 RELEASE PHOTO GATE PASS: 39/39 real embedded JPEGs, 0 fallbacks')
+          PY
       - name: Copy actual preview, record reviewed source SHA
         run: |
           set -euo pipefail
@@ -57,9 +67,12 @@ jobs:
           assert len(b)>2_000_000 and 'id="discoveryView"' in text
           for marker in ('const stage9ThreeEngineURL=','const stage9SharedEngineURL=',
                          'motion-atmosphere','installR13StoryMotion',
-                         'id="previewImmersive"','r15-scene-mark', 'r15BulkImageInput'):
+                         'id="previewImmersive"','r15-scene-mark', 'r15BulkImageInput', 'templateOfflinePhotoBundles=', 'r15MediaCoverage'):
               assert marker in text,marker
+          source_manifest=json.load(open('source/stage9/BUILD_MANIFEST.json'))
           metadata={'product':'Motion Studio Web','channel':'public-review-not-production',
+                    'photo_bundle':source_manifest['photoBundle'],
+                    'photo_coverage':'39/39', 'photo_fallbacks':0,
                     'source_commit':os.environ['REVIEW_SOURCE_SHA'],
                     'verified_source_ci':os.environ['REVIEW_SOURCE_CI'],
                     'filename':'review-preview.html','bytes':len(b),
@@ -77,7 +90,7 @@ jobs:
           git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
           git add review-preview.html R13_REVIEW_BUILD.json
           if ! git diff --cached --quiet; then
-            git commit -m 'build(review): deploy tested R13 full Three.js HTML'
+            git commit -m 'build(review): deploy all 39 offline chapter photos with R15-04 verified media audit'
             git push origin HEAD:main
           fi
       - name: Prepare GitHub Pages review package
@@ -107,7 +120,7 @@ jobs:
                       data=r.read()
                       assert r.status==200
                   assert hashlib.sha256(data).hexdigest()==expected, 'deployed content hash mismatch'
-                  for token in (b'motion-atmosphere',b'installR13StoryMotion',b'id="previewImmersive"',b'r15-scene-mark', b'r15BulkImageInput'):
+                  for token in (b'motion-atmosphere',b'installR13StoryMotion',b'id="previewImmersive"',b'r15-scene-mark', b'r15BulkImageInput', b'templateOfflinePhotoBundles=', b'r15MediaCoverage'):
                       assert token in data,token
                   with open(os.environ['GITHUB_STEP_SUMMARY'],'a') as f:
                       f.write('### R13 live review: exact bundle hash verified\n')
