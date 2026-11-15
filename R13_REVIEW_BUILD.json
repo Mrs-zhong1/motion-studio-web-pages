@@ -1,11 +1,11 @@
 {
   "product": "Motion Studio Web",
   "channel": "public-review-not-production",
-  "source_commit": "30866dcb62b680499498d83c13e0a4856a67e462",
-  "verified_source_ci": "https://github.com/Mrs-zhong1/motion-studio-web/actions/runs/43715835034",
+  "source_commit": "e0bcdf73b8eace43c6117bbe72b272afa57fcb5c",
+  "verified_source_ci": "https://github.com/Mrs-zhong1/motion-studio-web/actions/runs/43718014104",
   "filename": "review-preview.html",
-  "bytes": 2356442,
-  "sha256": "941aa6c9ba587bdbf236725a7e7e90ac2b770315cc34f0a7ee298edf47d63148",
+  "bytes": 2362200,
+  "sha256": "a71027f6a282bded442f19a269b39267d5bcc9d81f8b1c431653052b2ebec3ab",
   "native_safari": "NOT TESTED",
   "real_phone_gpu": "NOT TESTED",
   "commercial_media_license": "NOT APPROVED"
