@@ -121,3 +121,28 @@ jobs:
           else:
               raise RuntimeError('R13 live smoke failed: '+str(error))
           PY
+      - name: Record independently verified HTTPS deploy evidence
+        working-directory: pages
+        env:
+          DEPLOYED_PREVIEW: ${{ steps.deployment.outputs.page_url }}
+        run: |
+          set -euo pipefail
+          python - <<'PY'
+          from datetime import datetime,timezone
+          from pathlib import Path
+          import json,os
+          manifest=json.loads(Path('R13_REVIEW_BUILD.json').read_text())
+          record={'status':'pass','validation':'HTTP 200, exact SHA256 and R14 markup on deployed Pages',
+                  'url':os.environ['DEPLOYED_PREVIEW'].rstrip('/')+'/review-preview.html',
+                  'source_commit':manifest['source_commit'],
+                  'sha256':manifest['sha256'],
+                  'checked_at':datetime.now(timezone.utc).isoformat(),
+                  'scope':'HTTPS build integrity only; NOT human visual/native Safari/phone signoff'}
+          Path('R14_LIVE_VERIFIED.json').write_text(json.dumps(record,indent=2)+'\n')
+          PY
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add R14_LIVE_VERIFIED.json
+          git commit -m 'test(review): record verified live R14 deployment hash'
+          git push origin HEAD:main
+
