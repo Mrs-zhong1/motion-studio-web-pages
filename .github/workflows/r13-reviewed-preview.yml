@@ -20,8 +20,8 @@ jobs:
       name: github-pages
       url: ${{ steps.deployment.outputs.page_url }}
     env:
-      REVIEW_SOURCE_SHA: e0bcdf73b8eace43c6117bbe72b272afa57fcb5c
-      REVIEW_SOURCE_CI: https://github.com/Mrs-zhong1/motion-studio-web/actions/runs/43718014104
+      REVIEW_SOURCE_SHA: 0a4da094b20e872541c92f5eccd6af806e19297e
+      REVIEW_SOURCE_CI: https://github.com/Mrs-zhong1/motion-studio-web/actions/runs/43718830681
     steps:
       - name: Checkout public review host
         uses: actions/checkout@v4
@@ -57,7 +57,7 @@ jobs:
           assert len(b)>2_000_000 and 'id="discoveryView"' in text
           for marker in ('const stage9ThreeEngineURL=','const stage9SharedEngineURL=',
                          'motion-atmosphere','installR13StoryMotion',
-                         'id="previewImmersive"','r15-scene-mark'):
+                         'id="previewImmersive"','r15-scene-mark', 'r15BulkImageInput'):
               assert marker in text,marker
           metadata={'product':'Motion Studio Web','channel':'public-review-not-production',
                     'source_commit':os.environ['REVIEW_SOURCE_SHA'],
@@ -107,7 +107,7 @@ jobs:
                       data=r.read()
                       assert r.status==200
                   assert hashlib.sha256(data).hexdigest()==expected, 'deployed content hash mismatch'
-                  for token in (b'motion-atmosphere',b'installR13StoryMotion',b'id="previewImmersive"',b'r15-scene-mark'):
+                  for token in (b'motion-atmosphere',b'installR13StoryMotion',b'id="previewImmersive"',b'r15-scene-mark', b'r15BulkImageInput'):
                       assert token in data,token
                   with open(os.environ['GITHUB_STEP_SUMMARY'],'a') as f:
                       f.write('### R13 live review: exact bundle hash verified\n')
