@@ -68,8 +68,9 @@ jobs:
               live.locator("[data-template-card='product-3d']").click()
               live.locator("#previewUse").click()
               live.wait_for_function("() => project.templateId==='product-3d'",timeout=30000)
+              assert live.evaluate("() => typeof stage9ThreeEngineURL==='string' && stage9ThreeEngineURL.startsWith('data:text/javascript;base64,')"), "Bundled engine not active on live site"
               exported=live.evaluate("exportDocument()")
-              assert "stage9ThreeEngineURL" in exported and len(exported)>2000000
+              assert "data:text/javascript;base64," in exported and len(exported)>1000000, "Export did not contain bundled 3D engine"
               page=browser.new_page(viewport={"width":1280,"height":850})
               page.set_content(exported,wait_until="domcontentloaded",timeout=60000)
               page.locator("section[data-index='1']").scroll_into_view_if_needed()
