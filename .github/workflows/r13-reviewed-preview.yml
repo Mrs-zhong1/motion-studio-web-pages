@@ -37,13 +37,11 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: '22'
-          cache: npm
-          cache-dependency-path: source/stage9/package-lock.json
       - name: Build full offline Three.js editor
         working-directory: source/stage9
         run: |
           set -euo pipefail
-          npm ci --no-audit --no-fund
+          npm install --no-audit --no-fund
           npm run build
           python tests/check_build.py
       - name: Copy actual preview, record reviewed source SHA
