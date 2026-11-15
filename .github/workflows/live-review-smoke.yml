@@ -13,7 +13,7 @@ jobs:
   live-smoke:
     runs-on: ubuntu-latest
     steps:
-      - name: Verify deployed Pages URL and latest R1-R3 template UI
+      - name: Verify deployed Pages URL and exact R9 bundled Three.js product
         run: |
           python - <<'PY'
           import time, urllib.request
@@ -33,7 +33,11 @@ jobs:
                       if path:
                           for required in ('id="discoveryView"','id="previewUsePanel"','designed-card-photo','preview-product-layout','id="templatePreviewFrame"'):
                               assert required in data,(url,required)
-                          print("LIVE_PREVIEW_OK",url,len(data),"bytes")
+                          # Distinguish the genuine offline-bundled engine from the old unbundled Canvas editor.
+                          assert len(data.encode("utf-8"))>2_000_000, len(data)
+                          assert 'const stage9ThreeEngineURL=' in data, "R9 Three.js bundle missing"
+                          assert 'const stage9SharedEngineURL=' in data, "Shared WebGL bundle missing"
+                          print("R9_BUNDLED_LIVE_OK",url,len(data.encode("utf-8")),"bytes")
                       else:
                           assert "review-preview.html" in data,url
                           print("LIVE_ROOT_OK",url)
@@ -45,9 +49,46 @@ jobs:
           else:
               raise RuntimeError("Pages live smoke FAILED: "+errors[-1])
           PY
+      - name: Install Chromium for deployed R9 interaction test
+        run: |
+          python -m pip install playwright
+          python -m playwright install --with-deps chromium
+      - name: Open live R9 Pages and verify actual 3D model export
+        run: |
+          python - <<'PY'
+          from playwright.sync_api import sync_playwright
+          url="https://mrs-zhong1.github.io/motion-studio-web-pages/review-preview.html"
+          with sync_playwright() as pw:
+              browser=pw.chromium.launch(headless=True,args=[
+                 "--no-sandbox","--use-gl=angle","--use-angle=swiftshader",
+                 "--enable-webgl","--enable-unsafe-swiftshader"])
+              live=browser.new_page(viewport={"width":1280,"height":850})
+              live.goto(url,wait_until="domcontentloaded",timeout=60000)
+              assert live.locator("[data-template-card='product-3d']").is_visible()
+              live.locator("[data-template-card='product-3d']").click()
+              live.locator("#previewUse").click()
+              live.wait_for_function("() => project.templateId==='product-3d'",timeout=30000)
+              exported=live.evaluate("exportDocument()")
+              assert "stage9ThreeEngineURL" in exported and len(exported)>2000000
+              page=browser.new_page(viewport={"width":1280,"height":850})
+              page.set_content(exported,wait_until="domcontentloaded",timeout=60000)
+              page.locator("section[data-index='1']").scroll_into_view_if_needed()
+              view=page.frame_locator("section[data-index='1'] iframe").locator("#motion-three-webgl2")
+              view.wait_for(state="attached",timeout=35000)
+              status=None
+              for i in range(100):
+                  status=view.evaluate("el=>window.__motionThreeStatus||null")
+                  if status and (status.get("frames",0)>=2 or status.get("error")):break
+                  page.wait_for_timeout(180)
+              assert status and not status.get("error"),status
+              assert status["environmentReady"] and status["modelTriangles"]>=10000,status
+              assert status["pbr"] and status["studioLighting"],status
+              print("LIVE_PAGES_R9_THREE_OK",url,status["modelTriangles"],status["frames"])
+              page.close();live.close();browser.close()
+          PY
       - name: Report verified URL
         if: success()
         run: |
           echo "### Motion Studio public preview" >> "$GITHUB_STEP_SUMMARY"
-          echo "HTTP 200 + R1–R3 UI markers verified at [review-preview.html](https://mrs-zhong1.github.io/motion-studio-web-pages/review-preview.html)." >> "$GITHUB_STEP_SUMMARY"
+          echo "HTTP 200 + R9 bundled Three.js UI markers and real GLB render verified at [review-preview.html](https://mrs-zhong1.github.io/motion-studio-web-pages/review-preview.html)." >> "$GITHUB_STEP_SUMMARY"
           echo "This is a preview, not a production release." >> "$GITHUB_STEP_SUMMARY"
