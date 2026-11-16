@@ -1,5 +1,7 @@
 """Real published R18 AI gateway E2E, with a synthetic 39-scene ZIP."""
 import hashlib
+import time
+import urllib.request
 import json
 import struct
 import tempfile
@@ -43,7 +45,20 @@ def test_gateway():
             page=browser.new_page(viewport={"width":1440,"height":900})
             errors=[]
             page.on("pageerror",lambda e:errors.append(str(e)))
-            page.goto(URL,wait_until="domcontentloaded",timeout=60000)
+            # Prevent racing Github Pages deployment: require actual published revision.
+            published=False
+            for attempt in range(48):
+                try:
+                    with urllib.request.urlopen(URL+"?check="+str(attempt),timeout=15) as response:
+                        markup=response.read().decode("utf-8")
+                    if 'r18-postdeploy-v2' in markup:
+                        published=True
+                        break
+                except Exception as exc:
+                    print("Pages revision probe:",str(exc),flush=True)
+                time.sleep(5)
+            assert published,"GitHub Pages did not deploy the tested gateway revision"
+            page.goto(URL+"?version=r18-postdeploy-v2",wait_until="domcontentloaded",timeout=60000)
             frame=page.frame_locator("#app")
             frame.locator("[data-template-card]").first.wait_for(timeout=90000)
             assert frame.locator("[data-template-card]").count()==8
