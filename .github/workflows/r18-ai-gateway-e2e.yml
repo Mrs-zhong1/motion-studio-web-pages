@@ -1,15 +1,15 @@
 name: R18 AI Gateway Live E2E
 on:
   workflow_dispatch:
-  workflow_run:
-    workflows: ["pages build and deployment"]
-    types: [completed]
-    branches: [main]
+  push:
+    paths:
+      - 'review-r18-ai.html'
+      - 'tests/test_r18_gateway.py'
+      - '.github/workflows/r18-ai-gateway-e2e.yml'
 permissions:
   contents: read
 jobs:
   published-ai-gateway:
-    if: github.event_name == 'workflow_dispatch' || github.event.workflow_run.conclusion == 'success'
     runs-on: ubuntu-24.04
     steps:
       - uses: actions/checkout@v4
