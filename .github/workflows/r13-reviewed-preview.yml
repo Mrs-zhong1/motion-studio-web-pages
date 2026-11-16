@@ -20,8 +20,8 @@ jobs:
       name: github-pages
       url: ${{ steps.deployment.outputs.page_url }}
     env:
-      REVIEW_SOURCE_SHA: f9fdcdb23f0948308c97de3ceed74efebd898c14
-      REVIEW_SOURCE_CI: https://github.com/Mrs-zhong1/motion-studio-web/actions/runs/43786444513
+      REVIEW_SOURCE_SHA: e7a90381ab7a421188082f895bbe85b2f5f0c0db
+      REVIEW_SOURCE_CI: https://github.com/Mrs-zhong1/motion-studio-web/actions/runs/43789465207
     steps:
       - name: Checkout public review host
         uses: actions/checkout@v4
@@ -67,7 +67,7 @@ jobs:
           assert len(b)>2_000_000 and 'id="discoveryView"' in text
           for marker in ('const stage9ThreeEngineURL=','const stage9SharedEngineURL=',
                          'motion-atmosphere','installR13StoryMotion',
-                         'id="previewImmersive"','r15-scene-mark', 'r15BulkImageInput', 'templateOfflinePhotoBundles=', 'r15MediaCoverage', 'installR16StoryTransitions', 'r16-story-ready', 'r16DepthCss', '--r16-mist-x', 'r16-linked-chapter', '--r16-bridge-color'):
+                         'id="previewImmersive"','r15-scene-mark', 'r15BulkImageInput', 'templateOfflinePhotoBundles=', 'r15MediaCoverage', 'installR16StoryTransitions', 'r16-story-ready', 'r16DepthCss', '--r16-mist-x', 'r16-linked-chapter', '--r16-bridge-color', 'r17PreviewFilmstrip', 'r17PreviewPosition', 'r17RenderFilmstrip'):
               assert marker in text,marker
           source_manifest=json.load(open('source/stage9/BUILD_MANIFEST.json'))
           metadata={'product':'Motion Studio Web','channel':'public-review-not-production',
@@ -120,7 +120,7 @@ jobs:
                       data=r.read()
                       assert r.status==200
                   assert hashlib.sha256(data).hexdigest()==expected, 'deployed content hash mismatch'
-                  for token in (b'motion-atmosphere',b'installR13StoryMotion',b'id="previewImmersive"',b'r15-scene-mark', b'r15BulkImageInput', b'templateOfflinePhotoBundles=', b'r15MediaCoverage', b'installR16StoryTransitions', b'r16-story-ready', b'r16DepthCss', b'--r16-mist-x', b'r16-linked-chapter', b'--r16-bridge-color'):
+                  for token in (b'motion-atmosphere',b'installR13StoryMotion',b'id="previewImmersive"',b'r15-scene-mark', b'r15BulkImageInput', b'templateOfflinePhotoBundles=', b'r15MediaCoverage', b'installR16StoryTransitions', b'r16-story-ready', b'r16DepthCss', b'--r16-mist-x', b'r16-linked-chapter', b'--r16-bridge-color', b'r17PreviewFilmstrip', b'r17PreviewPosition', b'r17RenderFilmstrip'):
                       assert token in data,token
                   with open(os.environ['GITHUB_STEP_SUMMARY'],'a') as f:
                       f.write('### R13 live review: exact bundle hash verified\n')
