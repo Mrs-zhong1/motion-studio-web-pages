@@ -1,0 +1,98 @@
+<!doctype html><html lang="zh-CN"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>Motion Studio · R18 AI 真实网页验收</title>
+<style>*{box-sizing:border-box}html,body{margin:0;width:100%;height:100%;background:#0a1016;color:#edf2ed;font:14px/1.5 system-ui,-apple-system,sans-serif}header{height:66px;display:flex;gap:14px;align-items:center;padding:8px 17px;background:#111a22;border-bottom:1px solid #33404a;position:relative;z-index:2}strong{font-size:16px}small{font-size:11px;color:#9fadba}label{display:flex;gap:8px;align-items:center;padding:9px 14px;background:#ccee9d;color:#111a12;border-radius:9px;cursor:pointer;font-weight:700;white-space:nowrap}input{display:none}button{border:1px solid #586771;background:#24333b;color:#fff;border-radius:9px;padding:9px 12px;cursor:pointer}#status{flex:1;min-width:0;font-size:12px;color:#a9bbc4;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}iframe{display:block;border:0;width:100%;height:calc(100% - 66px);background:#101720}a{color:#d6eaae}@media(max-width:720px){header{height:auto;min-height:80px;flex-wrap:wrap;gap:6px}iframe{height:calc(100% - 105px)}small{display:none}label{padding:8px}#status{flex-basis:100%}}</style></head><body>
+<header><div><strong>Motion Studio <span style="color:#bfe998">R18 · AI</span></strong><small style="display:block">真实离线渲染版 · 39章素材验收</small></div><label for="pack">导入39张AI图片ZIP<input id="pack" type="file" accept=".zip,application/zip"></label><button id="reset">恢复R17演示版</button><div id="status" role="status" aria-live="polite">选择本项目提供的 MotionStudio_R18_Fullscreen_39_Integration.zip 后自动更新8套模板</div></header>
+<iframe id="app" title="Motion Studio Web 编辑器" src="review-preview.html"></iframe>
+<script>
+'use strict';
+const $=id=>document.getElementById(id), T=new TextDecoder();
+const specs={'editorial':4,'product-3d':5,'cinematic':5,'architecture':5,'agency':5,'fashion':5,'gallery':5,'saas':5};
+function requireValue(test,message){if(!test)throw Error(message)}
+async function unzip(file){
+  requireValue(file.size>1000&&file.size<18_000_000,'ZIP大小异常');
+  const buffer=await file.arrayBuffer(),view=new DataView(buffer),a=new Uint8Array(buffer);
+  let end=-1;for(let i=a.length-22;i>=Math.max(0,a.length-65557);i--){if(view.getUint32(i,true)===0x06054b50){end=i;break}}
+  requireValue(end>=0,'找不到ZIP中央目录');
+  const count=view.getUint16(end+10,true),offset=view.getUint32(end+16,true);requireValue(count>=40&&count<=90,'ZIP文件数量异常');
+  let pos=offset, unpacked=0;const out=new Map();
+  for(let i=0;i<count;i++){
+    requireValue(pos+46<=a.length&&view.getUint32(pos,true)===0x02014b50,'ZIP目录损坏');
+    const method=view.getUint16(pos+10,true),compressed=view.getUint32(pos+20,true),plain=view.getUint32(pos+24,true);
+    const n=view.getUint16(pos+28,true),e=view.getUint16(pos+30,true),c=view.getUint16(pos+32,true),local=view.getUint32(pos+42,true);
+    const name=T.decode(a.slice(pos+46,pos+46+n));pos+=46+n+e+c;
+    requireValue(name!=='..'&&!name.includes('../')&&!name.startsWith('/'),'ZIP路径不安全');
+    if(name.endsWith('/'))continue;
+    requireValue(plain<5_000_000&&compressed<6_000_000,'素材文件过大');unpacked+=plain;
+    requireValue(unpacked<32_000_000,'素材包解压后过大');
+    requireValue(local+30<=a.length&&view.getUint32(local,true)===0x04034b50,'ZIP本地目录损坏');
+    const dataAt=local+30+view.getUint16(local+26,true)+view.getUint16(local+28,true);
+    requireValue(dataAt+compressed<=a.length,'ZIP文件不完整');
+    const bytes=a.slice(dataAt,dataAt+compressed);let output;
+    if(method===0)output=bytes;
+    else if(method===8){
+      requireValue(typeof DecompressionStream!=='undefined','当前浏览器不支持ZIP解压，请改用Chrome或Firefox');
+      const stream=new Blob([bytes]).stream().pipeThrough(new DecompressionStream('deflate-raw'));
+      output=new Uint8Array(await new Response(stream).arrayBuffer());
+    } else throw Error('不支持ZIP压缩方式：'+method);
+    requireValue(output.byteLength===plain,'ZIP解压大小校验失败：'+name);
+    out.set(name,output);
+  }
+  return out;
+}
+async function validateAndPack(entries){
+  const manifestBytes=entries.get('stage9/ai-assets/manifest.json');
+  requireValue(manifestBytes,'ZIP缺少素材清单');
+  const m=JSON.parse(T.decode(manifestBytes));requireValue(Array.isArray(m.assets)&&m.assets.length===39,'素材不是39张');
+  requireValue(!!crypto.subtle,'需要HTTPS来校验素材SHA-256');
+  const pack={},used=new Set();
+  for(const item of m.assets){
+    const expected=specs[item.template],key=item.template+':'+item.chapter;
+    requireValue(expected&&Number.isInteger(item.chapter)&&item.chapter>=1&&item.chapter<=expected&&!used.has(key),'章节重复或模板类型错误');
+    requireValue(item.source==='AI_GENERATED'&&item.commercialUseTermsChecked===true,'素材AI来源或条款记录不完整');
+    requireValue(/^[a-z0-9-]+\.(jpg|jpeg|png|webp)$/i.test(item.file),'素材文件名异常');
+    const bytes=entries.get('stage9/ai-assets/'+item.file);requireValue(bytes&&bytes.length>=1000&&bytes.length<=5_000_000,'图片不存在或超限：'+item.file);
+    const hash=Array.from(new Uint8Array(await crypto.subtle.digest('SHA-256',bytes))).map(x=>x.toString(16).padStart(2,'0')).join('');
+    requireValue(hash===item.sha256,'素材SHA-256不匹配：'+item.file);
+    const mime=item.file.endsWith('.png')?'image/png':item.file.endsWith('.webp')?'image/webp':'image/jpeg';
+    const b64=await new Promise((resolve,reject)=>{const r=new FileReader();r.onload=()=>resolve(String(r.result).split(',')[1]);r.onerror=()=>reject(Error('图片读取失败'));r.readAsDataURL(new Blob([bytes],{type:mime}))});
+    (pack[item.template]||=[])[item.chapter-1]={media:'data:'+mime+';base64,'+b64,source:'ai-generated://'+item.template+'/'+item.chapter+'/'+hash.slice(0,16)};
+    used.add(key);
+  }
+  for(const [id,n] of Object.entries(specs))requireValue(pack[id]?.length===n&&!pack[id].some(x=>!x),'模板章节缺失：'+id);
+  return pack;
+}
+function injectPack(pack){
+ const frame=$('app').contentWindow;requireValue(frame&&frame.location.origin===location.origin,'预览页面与导入页面不同源');
+ frame.__r18AssetPack=pack;
+ frame.eval(`(function(){
+   for(const [id,entries] of Object.entries(window.__r18AssetPack)){
+     templateOfflinePhotoBundles[id]=entries;
+     templateThumbnailImages[id]=entries[0].media;
+   }
+   templatePhotoCache.clear(); templatePhotoPending.clear();templateAssetAuditCache.clear();
+   const originalEnsure=ensureTemplatePhoto;
+   ensureTemplatePhoto=async function(id){
+     const entries=window.__r18AssetPack[id];
+     if(!entries)return originalEnsure(id);
+     const images=entries.map(v=>v.media);
+     templatePhotoCache.set(id,images);
+     templateAssetAuditCache.set(id,entries.map((v,index)=>({chapter:index+1,kind:'ai-generated-image',source:v.source,rightsReviewed:false,sourceAttempted:true})));
+     return images;
+   };
+   const originalNormalize=normalizeImageMeta;
+   normalizeImageMeta=function(input){
+     if(input&&input.kind==='ai-generated-image'&&/^ai-generated:\/\/[a-z0-9-]+\/[1-5]\/[a-f0-9]{16}$/.test(input.source||''))
+       return {kind:'ai-generated-image',source:input.source,rightsReviewed:false};
+     return originalNormalize(input);
+   };
+   renderTemplateGrid();
+ })();`);
+}
+$('pack').onchange=async e=>{
+ const file=e.target.files[0];if(!file)return;
+ $('status').textContent='正在解压、核对39张素材哈希并替换模板…';
+ try{const pack=await validateAndPack(await unzip(file));injectPack(pack);$('status').textContent='✅ 39/39张AI图片已校验，8套模板已切换。点击模板预览或使用。';}
+ catch(err){$('status').textContent='❌ 导入失败：'+err.message;console.error(err)}
+ finally{e.target.value=''}
+};
+$('reset').onclick=()=>{ $('app').src='review-preview.html';$('status').textContent='已恢复 R17 演示素材';};
+</script></body></html>
