@@ -1,0 +1,25 @@
+name: R18 AI Gateway Live E2E
+on:
+  workflow_dispatch:
+  push:
+    paths:
+      - 'review-r18-ai.html'
+      - 'tests/test_r18_gateway.py'
+      - '.github/workflows/r18-ai-gateway-e2e.yml'
+permissions:
+  contents: read
+jobs:
+  published-ai-gateway:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Install browser testing runtime
+        run: |
+          python -m pip install --upgrade pip
+          pip install playwright==1.58.0
+          python -m playwright install --with-deps chromium
+      - name: Test actual public R18 ZIP import and 20-component editor
+        run: python tests/test_r18_gateway.py
