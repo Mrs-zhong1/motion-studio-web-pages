@@ -80,7 +80,7 @@ function injectPack(pack){
    };
    const originalNormalize=normalizeImageMeta;
    normalizeImageMeta=function(input){
-     if(input&&input.kind==='ai-generated-image'&&/^ai-generated:\/\/[a-z0-9-]+\/[1-5]\/[a-f0-9]{16}$/.test(input.source||''))
+     if(input&&input.kind==='ai-generated-image'&&typeof input.source==='string'&&input.source.startsWith('ai-generated://'))
        return {kind:'ai-generated-image',source:input.source,rightsReviewed:false};
      return originalNormalize(input);
    };
