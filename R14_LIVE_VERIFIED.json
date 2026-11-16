@@ -2,8 +2,8 @@
   "status": "pass",
   "validation": "HTTP 200, exact SHA256 and R14 markup on deployed Pages",
   "url": "https://mrs-zhong1.github.io/motion-studio-web-pages/review-preview.html",
-  "source_commit": "660f1d631bda8f36f143f8b4f035d5f60a53da10",
-  "sha256": "dfd5312db515585e6763e30aa63a2339e5d998cc338f27e1a84fc6c795ddfeb2",
-  "checked_at": "2026-11-15T14:54:24.105412+00:00",
+  "source_commit": "5a38a9e6a7aca86111eecab7359946813db89ab2",
+  "sha256": "5a2c538e924caa878a12bda2ddbc860bbde8461009e0ad33c6a7e4429d635532",
+  "checked_at": "2026-11-16T00:57:50.446970+00:00",
   "scope": "HTTPS build integrity only; NOT human visual/native Safari/phone signoff"
 }
