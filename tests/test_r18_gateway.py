@@ -48,7 +48,10 @@ def test_gateway():
             frame.locator("[data-template-card]").first.wait_for(timeout=90000)
             assert frame.locator("[data-template-card]").count()==8
             page.locator("#pack").set_input_files(str(archive))
-            page.wait_for_function("document.querySelector('#status').textContent.includes('39/39')",timeout=60000)
+            page.wait_for_function("""() => document.querySelector('#status').textContent.includes('39/39') || document.querySelector('#status').textContent.includes('导入失败')""",timeout=60000)
+            final_status=page.locator("#status").text_content()
+            print("R18 ZIP gateway status:",final_status,flush=True)
+            assert "39/39" in final_status,final_status
             assert frame.locator("[data-template-card]").count()==8
             source=frame.locator("body").evaluate("""async()=>{
                await ensureTemplatePhoto('editorial');
